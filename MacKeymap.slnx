@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/MacKeymap.Core/MacKeymap.Core.csproj" />
-    <Project Path="src/MacKeymap/MacKeymap.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/MacKeymap.Tests/MacKeymap.Tests.csproj" />
-  </Folder>
-</Solution>

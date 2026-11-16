@@ -1,0 +1,26 @@
+MacKeys (Windows x64)
+
+Open MacKeys.exe. AutoHotkey and .NET installation are not required.
+Mapping starts disabled for new or imported settings.
+
+Use the Enable/Disable Mapping button to switch mapping immediately.
+Use Save and Apply after editing rules.
+
+Closing or hiding the settings window keeps MacKeys in the system tray.
+Right-click its single tray icon to enable mapping, open settings, or exit.
+A check mark beside Enable Mapping means mapping is enabled.
+The background worker has no separate tray icon.
+
+Settings: %APPDATA%\MacKeymap-AHK\config.json
+This existing folder name is retained for compatibility.
+Version 3 settings from the older app can be imported without overwriting
+the original file. Imported settings start with mapping disabled.
+
+The EXE is unsigned. Real application and keyboard behavior still needs
+testing. Keep the complete package, including licenses/ and source/.
+
+Third-party notices: licenses/THIRD-PARTY.txt
+AutoHotkey license: licenses/license.txt
+JSON library license: licenses/JSON-LICENSE
+Application source: source/ (AHK files only, no build tools required to run).
+For development and rebuilding, use DEVELOPMENT.md in the project repository.
