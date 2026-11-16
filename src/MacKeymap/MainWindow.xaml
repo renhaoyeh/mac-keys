@@ -54,7 +54,13 @@
           <RowDefinition Height="Auto" />
           <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Grid Padding="56,24,56,12" MaxWidth="1100">
+        <!-- Content is left-aligned next to the navigation pane, like Windows Settings, and caps its width. -->
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MaxWidth="1312" />
+            <ColumnDefinition Width="0" />
+          </Grid.ColumnDefinitions>
+        <Grid Padding="56,24,56,12">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
@@ -74,8 +80,15 @@
             </Button>
           </StackPanel>
         </Grid>
+        </Grid>
         <ScrollViewer Grid.Row="1" x:Name="PageScroll">
-          <StackPanel x:Name="PageHost" Padding="56,0,56,40" Spacing="4" MaxWidth="1100" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" MaxWidth="1312" />
+              <ColumnDefinition Width="0" />
+            </Grid.ColumnDefinitions>
+            <StackPanel x:Name="PageHost" Padding="56,0,56,40" Spacing="4" />
+          </Grid>
         </ScrollViewer>
       </Grid>
     </NavigationView>
