@@ -3,7 +3,7 @@ $cacheDir = Join-Path (Split-Path $PSScriptRoot -Parent) '.tools'
 $tools = @(
     @{
         Name = 'AutoHotkey-2.0.31'
-        Url = 'https://www.autohotkey.com/download/2.0/AutoHotkey_2.0.31.zip'
+        Url = 'https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.31/AutoHotkey_2.0.31.zip'
         Hash = 'ca1a595aca4528755d8d4cd7fed23d497a37bd9a0b6892072612d68dee1bd00a'
         Files = @('AutoHotkey64.exe', 'license.txt')
     },

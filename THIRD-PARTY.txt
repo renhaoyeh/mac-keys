@@ -1,6 +1,6 @@
 AutoHotkey 2.0.31: GNU GPL v2; see licenses/license.txt in the package.
 Source: https://github.com/AutoHotkey/AutoHotkey/tree/v2.0.31
-Download: https://www.autohotkey.com/download/2.0/AutoHotkey_2.0.31.zip
+Download: https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.31/AutoHotkey_2.0.31.zip
 The release EXEs include the AutoHotkey runtime as their Ahk2Exe base.
 
 Ahk2Exe 1.1.37.02a2: build tool only, not included in the package.
