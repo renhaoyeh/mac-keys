@@ -69,4 +69,18 @@ MacKeys/
 
 核心規則與程序管理已有自動測試；真實程式與鍵盤行為仍需實測。
 
+## GitHub Release
+
+提交並推送包含 `.github/workflows/release.yml` 的版本後，推送 `v` 開頭的 tag：
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+GitHub Actions 會在 Windows 執行核心測試、打包，然後建立同名 Release，
+附上 `MacKeys.zip`。同一 tag 的工作流程重跑時會更新 ZIP。
+使用內建的 `GITHUB_TOKEN`，不需要另外設定 token secret。
+GUI 整合測試仍在本機執行。
+
 [回專案說明](README.md)
