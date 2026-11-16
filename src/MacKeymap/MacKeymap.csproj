@@ -27,6 +27,11 @@
   <ItemGroup>
     <ProjectReference Include="..\MacKeymap.Core\MacKeymap.Core.csproj" />
   </ItemGroup>
+  <!-- Bundled AutoHotkey (GPLv2, unmodified) runs the generated mapping script. -->
+  <ItemGroup>
+    <Content Include="..\..\third_party\AutoHotkey\AutoHotkey64.exe;..\..\third_party\AutoHotkey\license.txt;..\..\third_party\AutoHotkey\README.md"
+             Link="ahk\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
   <!-- Portable publish profiles: add a README and zip the publish folder next to it. -->
   <ItemGroup>
     <None Include="Portable.txt" CopyToPublishDirectory="Never" />

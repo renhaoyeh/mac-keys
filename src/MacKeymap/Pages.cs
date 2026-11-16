@@ -55,7 +55,7 @@ public sealed partial class MainWindow
     // ---------- 總覽 ----------
     private void BuildOverview()
     {
-        Add(Ui.Info("目前僅預覽設定", "第一階段原型：鍵盤操作尚未變更，任何配置都不會啟用全域攔截。"));
+        AddMappingStatus();
         Add(Ui.Section("選擇操作習慣"));
         for (var i = 0; i < _config.Profiles.Count; i++)
         {
@@ -390,11 +390,28 @@ public sealed partial class MainWindow
         return n;
     }
 
+    private void AddMappingStatus()
+    {
+        var running = _runner.IsRunning;
+        if (_mapping is { } m && (m.Running != running || m.Message.StartsWith("無法") || m.Message.StartsWith("找不到") || m.Message.StartsWith("產生")))
+            Add(Ui.Info("鍵盤配置", m.Message, InfoBarSeverity.Error));
+        else if (running)
+            Add(Ui.Info("鍵盤配置執行中", (_mapping?.Message ?? "由 AutoHotkey 套用已儲存的配置。") + "關閉此視窗後仍會繼續執行；可在「一般」暫停。", InfoBarSeverity.Success));
+        else
+            Add(Ui.Info(_config.Paused ? "鍵盤配置已暫停" : "鍵盤配置未執行",
+                _config.Paused ? "按鍵維持 Windows 原本行為。到「一般」關閉「暫停鍵盤配置」並儲存即可啟用。" : _mapping?.Message ?? "儲存設定後即會套用。",
+                InfoBarSeverity.Warning));
+        if (_mapping is { Skipped.Count: > 0 } s)
+            Add(Ui.Info("部分規則無法套用", $"以下規則的按鍵名稱無法轉換，已略過：{string.Join("、", s.Skipped)}", InfoBarSeverity.Warning));
+        if (IsDirty) Add(Ui.Note("有尚未儲存的變更；儲存後才會套用到實際按鍵。"));
+    }
+
     // ---------- 一般 ----------
     private void BuildGeneral()
     {
         Add(Ui.Section("鍵盤配置"));
-        Add(Ui.Card("暫停鍵盤配置", "第一階段沒有實際鍵盤映射；此開關只保存在設定中。",
+        AddMappingStatus();
+        Add(Ui.Card("暫停鍵盤配置", "暫停時停止 AutoHotkey，所有按鍵恢復 Windows 原本行為。按儲存後生效。",
             Ui.Toggle(_config.Paused, v => { _config.Paused = v; Changed(false); }), ""));
         Add(Ui.Card("開機時啟動", "尚未提供：不註冊任何常駐或開機項目。", Ui.Toggle(false, _ => { }, enabled: false), ""));
         Add(Ui.Card("在系統匣顯示", "尚未提供。", Ui.Toggle(false, _ => { }, enabled: false), ""));

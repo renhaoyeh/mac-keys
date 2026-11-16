@@ -13,7 +13,7 @@
       <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
         <FontIcon Glyph="&#xE765;" FontSize="16" />
         <TextBlock Text="Mac Keymap" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
-        <TextBlock x:Name="StatusText" Text="第一階段原型 · 全域攔截未實作／未啟用"
+        <TextBlock x:Name="StatusText" Text=""
                    Style="{StaticResource CaptionTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
       </StackPanel>

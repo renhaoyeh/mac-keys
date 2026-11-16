@@ -19,6 +19,8 @@ public sealed partial class MainWindow : Window
     private string _builtinQuery = "";
     private string _previewApp = "notepad.exe";
     private bool _closeConfirmed;
+    private readonly MappingRunner _runner = MappingRunner.Default;
+    private MappingRunner.Status? _mapping;
 
     public MainWindow()
     {
@@ -37,6 +39,10 @@ public sealed partial class MainWindow : Window
         // First launch never writes; the user saves explicitly.
         // After a load failure, saving is offered so the user can replace the broken file deliberately.
         _savedJson = _loadError == null ? Storage.Serialize(_config) : "";
+
+        // Bring the resident mapping in line with the saved settings (e.g. after a reboot or crash).
+        if (_loadError == null && !_config.Paused && !_runner.IsRunning) ApplyMapping();
+        UpdateMappingStatus();
 
         Nav.SelectedItem = Nav.MenuItems[0];
     }
@@ -129,6 +135,7 @@ public sealed partial class MainWindow : Window
             Storage.Save(_path, _config);
             _savedJson = Storage.Serialize(_config);
             _loadError = null;
+            ApplyMapping();
             Render();
             return true;
         }
@@ -158,6 +165,20 @@ public sealed partial class MainWindow : Window
         if (result == ContentDialogResult.Primary && !await SaveAsync()) return;
         _closeConfirmed = true;
         Close();
+    }
+
+    /// <summary>Saved settings take effect immediately: regenerate the AHK script and restart it, or stop it when paused.</summary>
+    private void ApplyMapping()
+    {
+        try { _mapping = _runner.Apply(_config); }
+        catch (Exception e) { _mapping = new(_runner.IsRunning, $"無法套用鍵盤配置：{e.Message}", []); }
+        UpdateMappingStatus();
+    }
+
+    private void UpdateMappingStatus()
+    {
+        var running = _runner.IsRunning;
+        StatusText.Text = running ? "● 鍵盤配置執行中" : _config.Paused ? "鍵盤配置已暫停" : "鍵盤配置未執行";
     }
 
     internal nint Hwnd => WinRT.Interop.WindowNative.GetWindowHandle(this);
