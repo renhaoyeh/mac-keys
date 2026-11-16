@@ -1,0 +1,5 @@
+Mac Keymap (portable)
+
+Run MacKeymap.exe. No installation is needed; nothing is registered on this machine.
+Settings are stored in %APPDATA%\MacKeymap\config\config.json.
+To remove: delete this folder (and the settings folder above, if you want).
