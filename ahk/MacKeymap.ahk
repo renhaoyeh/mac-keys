@@ -6,7 +6,7 @@
 
 AppDir := A_IsCompiled ? A_ScriptDir : RegExReplace(A_LineFile, '\\[^\\]+$')
 DataDir := A_AppData '\MacKeymap-AHK'
-RunnerMode := A_IsCompiled && (StrLower(A_ScriptName) = 'mackeysrun.exe' || Normalize(A_ScriptFullPath) = Normalize(A_Startup '\MacKeys.exe'))
+RunnerMode := A_IsCompiled && Normalize(A_ScriptFullPath) = Normalize(A_Startup '\MacKeys.exe')
 if A_Args.Length >= 2 && A_Args[1] = '--data-dir'
     DataDir := A_Args[2]
 DirCreate DataDir

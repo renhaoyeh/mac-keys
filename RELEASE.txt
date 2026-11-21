@@ -1,7 +1,7 @@
 MacKeys (Windows x64)
 
-Open MacKeysSetup.exe for settings. It does not start mapping when opened.
-Open MacKeysRun.exe to start saved mapping in the background.
+The package contains one executable: MacKeysSetup.exe. Open it for settings;
+it does not start mapping when opened.
 AutoHotkey and .NET installation are not required.
 
 Use Enable/Disable Mapping in settings to control mapping explicitly.

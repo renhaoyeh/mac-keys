@@ -21,7 +21,7 @@ dist/                    發布產物（Git 忽略）
 - `ahk/Settings.ahk`：設定視窗、EXE 選擇器及執行中程式選取器。
 - `ahk/Engine.ahk`：內建規則、解析、設定讀寫與驗證。
 - `ahk/Worker.ahk`：背景改鍵程序。
-- `MacKeysSetup.exe` 開啟設定；`MacKeysRun.exe` 在背景啟用改鍵。
+- 發布包只包含 `MacKeysSetup.exe`，用於設定；背景改鍵由使用者在設定中手動啟用。
 - `RELEASE.txt`：打包時複製為發布包的 `README.txt`。
 - `THIRD-PARTY.txt`：打包時複製至發布包的 `licenses/`。
 
@@ -60,8 +60,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Package.ps1
 
 ```text
 MacKeys/
-  MacKeysSetup.exe       設定視窗
-  MacKeysRun.exe         背景啟用改鍵
+  MacKeysSetup.exe       設定視窗（唯一發布執行檔）
   README.txt             使用說明
   licenses/              第三方授權與來源資訊
   source/                AHK 原始碼，不含 PowerShell 建置腳本或測試

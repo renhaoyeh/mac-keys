@@ -30,7 +30,6 @@ function Compile-Ahk($source, $target) {
 try {
     Compile-Ahk "$sourceDir/Worker.ahk" "$sourceDir/build/Worker.exe"
     Compile-Ahk "$sourceDir/MacKeymap.ahk" "$stage/MacKeysSetup.exe"
-    Copy-Item -LiteralPath "$stage/MacKeysSetup.exe" -Destination "$stage/MacKeysRun.exe"
     Copy-Item -LiteralPath "$repoDir/RELEASE.txt" -Destination "$stage/README.txt"
     Copy-Item -LiteralPath $tools.License, "$repoDir/THIRD-PARTY.txt", "$sourceDir/lib/JSON-LICENSE" -Destination "$stage/licenses"
     foreach ($name in @('MacKeymap.ahk', 'Settings.ahk', 'Engine.ahk', 'Worker.ahk')) {
@@ -86,7 +85,7 @@ try {
     }
     Get-Item (Join-Path $distDir 'MacKeys.zip') | Select-Object FullName, Length
     if (Test-Path -LiteralPath $packageDir) {
-        Get-Item (Join-Path $packageDir 'MacKeysSetup.exe'), (Join-Path $packageDir 'MacKeysRun.exe') -ErrorAction SilentlyContinue | Select-Object FullName, Length
+        Get-Item (Join-Path $packageDir 'MacKeysSetup.exe') -ErrorAction SilentlyContinue | Select-Object FullName, Length
     }
 } finally {
     foreach ($path in @($stage, $zipStage)) {
