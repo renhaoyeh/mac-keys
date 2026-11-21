@@ -18,9 +18,10 @@ dist/                    發布產物（Git 忽略）
 ```
 
 - `ahk/MacKeymap.ahk`：入口與改鍵程序管理。
-- `ahk/Settings.ahk`：設定視窗及 EXE 選擇器。
+- `ahk/Settings.ahk`：設定視窗、EXE 選擇器及執行中程式選取器。
 - `ahk/Engine.ahk`：內建規則、解析、設定讀寫與驗證。
 - `ahk/Worker.ahk`：背景改鍵程序。
+- `MacKeysSetup.exe` 開啟設定；`MacKeysRun.exe` 在背景啟用改鍵。
 - `RELEASE.txt`：打包時複製為發布包的 `README.txt`。
 - `THIRD-PARTY.txt`：打包時複製至發布包的 `licenses/`。
 
@@ -33,10 +34,10 @@ dist/                    發布產物（Git 忽略）
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 $tools = & ./scripts/Download-Tools.ps1
-& $tools.AutoHotkey ./ahk/MacKeymap.ahk --preview
+& $tools.AutoHotkey ./ahk/MacKeymap.ahk
 ```
 
-`--preview` 不會自動啟用改鍵。
+開啟設定視窗時不會自動啟用改鍵。
 
 ## 測試
 
@@ -59,7 +60,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Package.ps1
 
 ```text
 MacKeys/
-  MacKeys.exe            使用者執行的程式
+  MacKeysSetup.exe       設定視窗
+  MacKeysRun.exe         背景啟用改鍵
   README.txt             使用說明
   licenses/              第三方授權與來源資訊
   source/                AHK 原始碼，不含 PowerShell 建置腳本或測試

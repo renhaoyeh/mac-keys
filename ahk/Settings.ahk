@@ -1,5 +1,5 @@
 ﻿ShowSettings() {
-    global SettingsWindow, ProfileList, MappingButton, RoleControls, FeatureControls, RuleList, ExclusionEdit, AppList, StatusText
+    global SettingsWindow, ProfileList, MappingButton, RoleControls, FeatureControls, RuleList, ExclusionList, ExclusionDetail, ExclusionDraft, AppList, StatusText
     if IsSet(SettingsWindow) {
         SettingsWindow.Show()
         return
@@ -11,7 +11,7 @@
     ProfileList.OnEvent('Change', SwitchProfile)
     g.AddButton('x380 y15 w100 h32', '複製配置').OnEvent('Click', CopyProfile)
     MappingButton := g.AddButton('x510 y15 w150 h32', Flag(Config['paused']) ? '啟用改鍵' : '停用改鍵')
-    MappingButton.OnEvent('Click', (*) => SetMappingPaused(!Flag(Config['paused'])))
+    MappingButton.OnEvent('Click', (*) => SetMappingPaused(KnownWorker() > 0))
     tabs := g.AddTab3('x15 y65 w740 h420', ['基本設定', '規則', '程式與排除'])
     tabs.UseTab(1)
     g.AddText('x35 y105 w695 h24', '指定實體修飾鍵的角色；「保留」代表維持 Windows 原有功能。')
@@ -34,9 +34,15 @@
     g.AddButton('x255 y425 w100 h32', '刪除覆寫').OnEvent('Click', DeleteRule)
     g.AddButton('x365 y425 w165 h32', '查看／覆寫內建規則').OnEvent('Click', ShowBuiltins)
     tabs.UseTab(3)
-    g.AddText('x35 y105 w330 h24', '排除改鍵（每行一個 EXE 或完整路徑）：')
-    ExclusionEdit := g.AddEdit('x35 y133 w330 h250 Multi WantReturn')
-    g.AddButton('x35 y400 w145 h32', '選擇 EXE 加入排除').OnEvent('Click', (*) => AppendExe(ExclusionEdit))
+    g.AddText('x35 y105 w330 h22', '排除改鍵：')
+    ExclusionList := g.AddListView('x35 y130 w330 h145 -Multi NoSortHdr', ['程式名稱'])
+    ExclusionList.ModifyCol(1, 310)
+    ExclusionList.OnEvent('ItemSelect', ShowExclusionDetail)
+    ExclusionDetail := g.AddEdit('x35 y300 w330 h42 Multi ReadOnly -WantReturn')
+    g.AddText('x35 y280 w330 h20', '完整路徑／名稱：')
+    g.AddButton('x35 y355 w115 h30', '選擇 EXE').OnEvent('Click', (*) => AppendExclusionExe())
+    g.AddButton('x160 y355 w130 h30', '執行中程式…').OnEvent('Click', (*) => PickRunningAppExclusions())
+    g.AddButton('x35 y393 w125 h30', '編輯清單…').OnEvent('Click', EditExclusionList)
     g.AddText('x390 y105 w335 h24', '程式偏好（Windows／終端機）：')
     AppList := g.AddListView('x390 y133 w335 h250 -Multi', ['程式', '模式'])
     g.AddButton('x390 y400 w100 h32', '選擇 EXE').OnEvent('Click', (*) => AddAppMode(true))
@@ -44,12 +50,17 @@
     g.AddButton('x610 y400 w100 h32', '刪除偏好').OnEvent('Click', DeleteAppMode)
     tabs.UseTab()
     ; Keep the footer outside the tab regardless of the last page's control positions.
-    StatusText := g.AddText('x15 y501 w425 h34', '尚未套用；原版設定不會被修改')
-    g.AddButton('x455 y499 w150 h36 Default', '儲存並套用').OnEvent('Click', SaveSettings)
-    g.AddButton('x615 y499 w140 h36', '隱藏視窗').OnEvent('Click', HideSettings)
+    if A_IsCompiled {
+        startupButton := g.AddButton('x15 y499 w165 h36', '加入開機啟動')
+        startupButton.OnEvent('Click', InstallStartupRunner)
+    }
+    StatusText := g.AddText('x190 y501 w250 h34', '尚未套用；原版設定不會被修改')
+    g.AddButton('x450 y499 w145 h36 Default', '儲存並套用').OnEvent('Click', SaveSettings)
+    g.AddButton('x605 y499 w150 h36', '關閉設定').OnEvent('Click', HideSettings)
     g.OnEvent('Close', HideSettings)
     LoadProfile()
     g.Show('w770 h550')
+    SetTimer(UpdateMappingStatus, 1000)
 }
 
 ProfileNames() {
@@ -61,13 +72,15 @@ ProfileNames() {
 CurrentProfile() => Config['profiles'][Config['active'] + 1]
 
 LoadProfile() {
+    global ExclusionDraft
     p := CurrentProfile()
     ProfileList.Choose(Config['active'] + 1)
     for i, ctrl in RoleControls
         ctrl.Choose(p['roles'][i] = 'Command' ? 2 : p['roles'][i] = 'Option' ? 3 : 1)
     for name, ctrl in FeatureControls
         ctrl.Value := Flag(p['features'][name])
-    ExclusionEdit.Value := p['exclusions']
+    ExclusionDraft := p['exclusions']
+    RefreshExclusions()
     RefreshRules()
     RefreshApps()
 }
@@ -77,7 +90,7 @@ CaptureProfile() {
         p['roles'][i] := ctrl.Text
     for name, ctrl in FeatureControls
         p['features'][name] := ctrl.Value ? JSON.true : JSON.false
-    p['exclusions'] := ExclusionEdit.Value
+    p['exclusions'] := ExclusionDraft
 }
 SwitchProfile(*) {
     CaptureProfile()
@@ -151,7 +164,7 @@ EditRule(index := -1, source := false) {
     scope := dlg.AddDropDownList('x+10 w330', ['Global', 'Only', 'Except'])
     scope.Choose(r['scope'] = 'Only' ? 2 : r['scope'] = 'Except' ? 3 : 1)
     dlg.AddText('xm', 'Global：全部；Only：僅指定程式；Except：排除指定程式')
-    dlg.AddText('xm', '程式（每行 EXE 名稱或完整路徑）：')
+    dlg.AddText('xm', '每行輸入一個程式檔名或完整路徑：')
     apps := dlg.AddEdit('xm w500 h90 Multi WantReturn', r['apps'])
     dlg.AddButton('xm w130 h30', '選擇適用 EXE').OnEvent('Click', (*) => AppendExe(apps))
     dlg.AddButton('x+10 w160 h30', '選擇啟動的 EXE').OnEvent('Click', ChooseLaunch)
@@ -201,15 +214,145 @@ RefreshApps() {
 }
 AppendExe(control) {
     if path := FileSelect(1, , '選擇程式', '程式 (*.exe)') {
-        if !MatchesLines(control.Value, path)
-            control.Value := RTrim(control.Value, '`r`n ') (Trim(control.Value) = '' ? '' : '`r`n') path
+        control.Value := AppendExclusionPath(control.Value, path)
     }
+}
+
+AppendExclusionExe() {
+    global ExclusionDraft
+    if path := FileSelect(1, , '選擇程式', '程式 (*.exe)') {
+        ExclusionDraft := AppendExclusionPath(ExclusionDraft, path)
+        RefreshExclusions()
+    }
+}
+
+RefreshExclusions() {
+    global ExclusionList, ExclusionDetail, ExclusionDraft
+    ExclusionList.Delete()
+    for line in StrSplit(ExclusionDraft, '`n', '`r') {
+        value := Trim(line)
+        if value {
+            SplitPath(value, &baseName)
+            ExclusionList.Add(, baseName)
+        }
+    }
+    ExclusionDetail.Value := ''
+}
+
+ShowExclusionDetail(ctrl, row, *) {
+    global ExclusionDetail, ExclusionDraft
+    if !row {
+        ExclusionDetail.Value := ''
+        return
+    }
+    index := 0
+    for line in StrSplit(ExclusionDraft, '`n', '`r') {
+        if Trim(line) && ++index = row {
+            ExclusionDetail.Value := Trim(line)
+            return
+        }
+    }
+    ExclusionDetail.Value := ''
+}
+
+EditExclusionList(*) {
+    global SettingsWindow, ExclusionDraft
+    dlg := Gui('+Owner' SettingsWindow.Hwnd, '編輯排除清單')
+    dlg.SetFont('s10', 'Microsoft JhengHei UI')
+    dlg.AddText('xm', '每行輸入一個程式檔名或完整路徑：')
+    edit := dlg.AddEdit('xm w430 h220 Multi WantReturn', ExclusionDraft)
+    dlg.AddButton('xm w100 h32 Default', '確定').OnEvent('Click', Commit)
+    dlg.AddButton('x+10 w100 h32', '取消').OnEvent('Click', CloseEditor)
+    dlg.OnEvent('Close', CloseEditor), dlg.OnEvent('Escape', CloseEditor)
+    SettingsWindow.Opt('+Disabled')
+    dlg.Show()
+    Commit(*) {
+        ExclusionDraft := edit.Value
+        RefreshExclusions()
+        CloseEditor()
+    }
+    CloseEditor(*) {
+        dlg.Destroy()
+        SettingsWindow.Opt('-Disabled')
+    }
+}
+
+AppendExclusionPath(value, path) => !path || MatchesLines(value, path) ? value : RTrim(value, '`r`n ') (Trim(value) = '' ? '' : '`r`n') path
+
+PickRunningAppExclusions() {
+    global SettingsWindow, ExclusionDraft
+    dlg := Gui('+Owner' SettingsWindow.Hwnd, '選擇執行中的程式')
+    dlg.SetFont('s10', 'Microsoft JhengHei UI')
+    dlg.AddText('xm', '勾選要排除的程式；選取項目可檢視完整路徑。')
+    list := dlg.AddListView('xm w620 h240 Checked', ['視窗名稱', '程式名稱', ''])
+    list.ModifyCol(1, 340), list.ModifyCol(2, 260), list.ModifyCol(3, 0)
+    list.OnEvent('ItemFocus', ShowPath), list.OnEvent('ItemSelect', ShowPath)
+    empty := dlg.AddText('xm y+5 w620', '找不到可加入的執行中程式。')
+    dlg.AddText('xm y+5 w620 h20', '完整路徑：')
+    detail := dlg.AddEdit('xm w620 h42 Multi ReadOnly -WantReturn')
+    dlg.AddButton('xm w110 h32', '重新整理').OnEvent('Click', Refresh)
+    dlg.AddButton('x+10 w130 h32 Default', '加入排除').OnEvent('Click', AddSelected)
+    dlg.AddButton('x+10 w100 h32', '取消').OnEvent('Click', ClosePicker)
+    dlg.OnEvent('Close', ClosePicker), dlg.OnEvent('Escape', ClosePicker)
+    SettingsWindow.Opt('+Disabled')
+    Refresh()
+    dlg.Show()
+    Refresh(*) {
+        list.Delete()
+        detail.Value := ''
+        for app in RunningWindowApps()
+            if !MatchesLines(ExclusionDraft, app['path']) {
+                SplitPath(app['path'], &exeName)
+                list.Add(, app['title'], exeName, app['path'])
+            }
+        empty.Visible := list.GetCount() = 0
+    }
+    ShowPath(ctrl, row, *) {
+        detail.Value := row ? ctrl.GetText(row, 3) : ''
+    }
+    AddSelected(*) {
+        value := ExclusionDraft
+        row := 0
+        while row := list.GetNext(row, 'C') {
+            path := list.GetText(row, 3)
+            value := AppendExclusionPath(value, path)
+        }
+        ExclusionDraft := value
+        RefreshExclusions()
+        ClosePicker()
+    }
+    ClosePicker(*) {
+        dlg.Destroy()
+        SettingsWindow.Opt('-Disabled')
+    }
+}
+
+RunningWindowApps() {
+    apps := [], paths := Map(), ownPid := DllCall('GetCurrentProcessId', 'UInt')
+    for hwnd in WinGetList() {
+        if !DllCall('IsWindowVisible', 'Ptr', hwnd, 'Int')
+            continue
+        try {
+            title := WinGetTitle(hwnd)
+            if !Trim(title) || WinGetPID(hwnd) = ownPid
+                continue
+            path := WinGetProcessPath(hwnd)
+            if !path || paths.Has(Normalize(path))
+                continue
+            paths[Normalize(path)] := true
+            apps.Push(Map('title', title, 'path', path))
+        } catch {
+            ; Windows can disappear, or their process path can be inaccessible, during enumeration.
+            continue
+        }
+    }
+    return apps
 }
 AddAppMode(browse := false) {
     if browse
         app := FileSelect(1, , '選擇程式', '程式 (*.exe)')
     else {
-        answer := InputBox('EXE 名稱或完整路徑：', '新增程式偏好', 'w450 h130')
+        answer := InputBox('程式檔名或完整路徑：', '新增程式偏好', 'w450 h130')
         app := answer.Result = 'OK' ? Trim(answer.Value) : ''
     }
     if !app
@@ -243,6 +386,5 @@ CanClose() {
 }
 HideSettings(*) {
     if CanClose()
-        SettingsWindow.Hide()
+        ExitApp()
 }
-

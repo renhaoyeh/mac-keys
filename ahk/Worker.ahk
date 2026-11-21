@@ -1,10 +1,10 @@
-#Requires AutoHotkey v2.0
+﻿#Requires AutoHotkey v2.0
 #NoTrayIcon
 #SingleInstance Off
 #UseHook
 #Include Engine.ahk
 
-; Start suspended: the settings process commits only after registration succeeds.
+; Start suspended until the launcher commits this worker.
 Suspend true
 Persistent
 KeyHistory 0
@@ -15,11 +15,14 @@ try {
     ValidateConfig(cfg)
     maps := BuildContexts(cfg['profiles'][cfg['active'] + 1])
     Contexts := maps[1]
+    A_IconTip := 'MacKeys：改鍵已啟用'
+    A_TrayMenu.Delete()
+    A_TrayMenu.Add('停用改鍵', (*) => ExitApp())
     HotIf (hk) => Lookup(hk) is Array
     for hk in maps[2]
         Hotkey hk, Fire
     HotIf
-    OnMessage(0x8001, (*) => Suspend(false))
+    OnMessage(0x8001, (*) => (Suspend(false), A_IconHidden := false))
     FileAppend DllCall('GetCurrentProcessId'), A_Args[2], 'UTF-8'
 } catch as e {
     FileAppend e.Message, A_Args[2] '.error', 'UTF-8'

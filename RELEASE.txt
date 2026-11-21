@@ -1,15 +1,18 @@
 MacKeys (Windows x64)
 
-Open MacKeys.exe. AutoHotkey and .NET installation are not required.
-Mapping starts disabled for new or imported settings.
+Open MacKeysSetup.exe for settings. It does not start mapping when opened.
+Open MacKeysRun.exe to start saved mapping in the background.
+AutoHotkey and .NET installation are not required.
 
-Use the Enable/Disable Mapping button to switch mapping immediately.
-Use Save and Apply after editing rules.
+Use Enable/Disable Mapping in settings to control mapping explicitly.
+Save and Apply updates an active mapping and saves settings; it does not
+start mapping when mapping is stopped.
+Closing settings exits the settings window without stopping mapping.
+Right-click the mapping worker's tray icon and choose Stop mapping to stop it.
 
-Closing or hiding the settings window keeps MacKeys in the system tray.
-Right-click its single tray icon to enable mapping, open settings, or exit.
-A check mark beside Enable Mapping means mapping is enabled.
-The background worker has no separate tray icon.
+Click Add to Startup at the bottom of settings to install background startup.
+The installer replaces the previous Startup MacKeys.exe entry and does not
+start, stop, or switch either application. Startup remains opt-in.
 
 Settings: %APPDATA%\MacKeymap-AHK\config.json
 This existing folder name is retained for compatibility.
