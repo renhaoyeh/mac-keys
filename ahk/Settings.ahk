@@ -1,5 +1,5 @@
 ﻿ShowSettings() {
-    global SettingsWindow, ProfileList, MappingButton, RoleControls, FeatureControls, RuleList, ExclusionList, ExclusionDetail, ExclusionDraft, AppList, StatusText
+    global SettingsWindow, ProfileList, MappingButton, RoleControls, FeatureControls, RuleList, SpecialRuleList, SpecialEditButton, SpecialHint, ExclusionList, ExclusionDetail, ExclusionDraft, AppList, StatusText
     if IsSet(SettingsWindow) {
         SettingsWindow.Show()
         return
@@ -12,7 +12,7 @@
     g.AddButton('x380 y15 w100 h32', '複製配置').OnEvent('Click', CopyProfile)
     MappingButton := g.AddButton('x510 y15 w150 h32', Flag(Config['paused']) ? '啟用改鍵' : '停用改鍵')
     MappingButton.OnEvent('Click', (*) => SetMappingPaused(KnownWorker() > 0))
-    tabs := g.AddTab3('x15 y65 w740 h420', ['基本設定', '規則', '程式與排除'])
+    tabs := g.AddTab3('x15 y65 w740 h420', ['基本設定', '規則', '程式與排除', '特殊快捷鍵'])
     tabs.UseTab(1)
     g.AddText('x35 y105 w695 h24', '指定實體修飾鍵的角色；「保留」代表維持 Windows 原有功能。')
     RoleControls := []
@@ -48,6 +48,13 @@
     g.AddButton('x390 y400 w100 h32', '選擇 EXE').OnEvent('Click', (*) => AddAppMode(true))
     g.AddButton('x500 y400 w100 h32', '輸入名稱').OnEvent('Click', (*) => AddAppMode())
     g.AddButton('x610 y400 w100 h32', '刪除偏好').OnEvent('Click', DeleteAppMode)
+    tabs.UseTab(4)
+    SpecialHint := g.AddText('x35 y105 w695 h24')
+    SpecialRuleList := g.AddListView('x35 y135 w695 h260 -Multi NoSortHdr', ['功能', '預設觸發鍵', '目標', '內建 ID'])
+    SpecialRuleList.OnEvent('DoubleClick', (ctrl, row) => row ? EditSpecialRule() : 0)
+    SpecialEditButton := g.AddButton('x35 y410 w125 h32', '編輯選取項目')
+    SpecialEditButton.OnEvent('Click', EditSpecialRule)
+    SpecialRuleList.ModifyCol(1, 150), SpecialRuleList.ModifyCol(2, 180), SpecialRuleList.ModifyCol(3, 300), SpecialRuleList.ModifyCol(4, 0)
     tabs.UseTab()
     ; Keep the footer outside the tab regardless of the last page's control positions.
     if A_IsCompiled {
@@ -82,6 +89,7 @@ LoadProfile() {
     ExclusionDraft := p['exclusions']
     RefreshExclusions()
     RefreshRules()
+    RefreshSpecialRules()
     RefreshApps()
 }
 CaptureProfile() {
@@ -114,6 +122,42 @@ RefreshRules() {
     for i, width in [45, 125, 135, 80, 165, 75]
         RuleList.ModifyCol(i, width)
 }
+RefreshSpecialRules() {
+    global SpecialRuleList, SpecialEditButton, SpecialHint
+    SpecialRuleList.Delete()
+    isMac := CurrentProfile()['kind'] = 'MacOs'
+    SpecialEditButton.Enabled := isMac
+    SpecialHint.Text := isMac ? 'Command 依照「基本設定」的按鍵角色，預設為左 Alt。' : 'Windows 原始操作配置不使用內建快捷鍵。'
+    if !isMac
+        return
+    for r in Catalog()
+        if IsSpecialBuiltin(r)
+            SpecialRuleList.Add(, r['name'], r['trigger'], r['value'], r['builtin_id'])
+}
+IsSpecialBuiltin(r) => r['builtin_id'] = 'Command+Q' || r['builtin_id'] = 'Command+Shift+4'
+    || r['builtin_id'] = 'Command+Z' || r['builtin_id'] = 'Command+Shift+Z'
+EditSpecialRule(*) {
+    global SpecialRuleList
+    if CurrentProfile()['kind'] != 'MacOs'
+        return
+    if !(row := SpecialRuleList.GetNext())
+        return
+    id := SpecialRuleList.GetText(row, 4)
+    for builtin in Catalog()
+        if builtin['builtin_id'] = id {
+            ; Reuse an existing global override; app-specific variants remain in the regular rule list.
+            bestIndex := 0, best := false
+            for index, saved in CurrentProfile()['overrides']
+                if NullableText(saved.Get('builtin_id', '')) = id && saved['scope'] = 'Global' && (!best || CompareRules(saved, 1, best, 1) >= 0)
+                    bestIndex := index, best := saved
+            if bestIndex {
+                EditRule(bestIndex)
+                return
+            }
+            EditRule(0, builtin)
+            return
+        }
+}
 DeleteRule(*) {
     if row := RuleList.GetNext() {
         CurrentProfile()['overrides'].RemoveAt(row)
@@ -127,8 +171,11 @@ ShowBuiltins(*) {
     }
     dlg := Gui('+Owner' SettingsWindow.Hwnd, '內建規則 — 雙擊新增覆寫')
     dlg.SetFont('s10', 'Microsoft JhengHei UI')
-    list := dlg.AddListView('w580 h450 -Multi', ['來源', '目標'])
-    rules := Catalog()
+    list := dlg.AddListView('w580 h450 -Multi NoSortHdr', ['來源', '目標'])
+    rules := []
+    for rule in Catalog()
+        if !IsSpecialBuiltin(rule)
+            rules.Push(rule)
     for r in rules
         list.Add(, r['trigger'], r['value'])
     list.ModifyCol(1, 270), list.ModifyCol(2, 270)

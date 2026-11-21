@@ -62,6 +62,8 @@ CommandRule(trigger) {
     if !RegExMatch(trigger, '^Command\+(Shift\+)?([^+]+)$', &m)
         return false
     shift := m[1], key := m[2]
+    if !shift && key = 'Q'
+        return NewRule(trigger, 'Alt+F4', 'Command', '關閉視窗')
     switch key {
         case 'Tab': value := 'LAlt+' shift key
         case 'Left': value := shift 'Home'
@@ -77,7 +79,8 @@ CommandRule(trigger) {
             case '[': value := 'LCtrl+Shift+Tab'
         }
     }
-    return NewRule(trigger, value, 'Command')
+    name := trigger = 'Command+Z' ? '復原' : trigger = 'Command+Shift+Z' ? '重做' : ''
+    return NewRule(trigger, value, 'Command', name)
 }
 
 Catalog() {
@@ -85,8 +88,13 @@ Catalog() {
     keys.Push('Tab', 'Left', 'Right', 'Up', 'Down', 'Enter', 'Backspace', 'Delete', 'Space', '[', ']')
     for key in keys {
         rules.Push(CommandRule('Command+' key))
-        rules.Push(CommandRule('Command+Shift+' key))
+        if key != '4'
+            rules.Push(CommandRule('Command+Shift+' key))
     }
+    ; Keep the old generated ID so existing Command+Shift+4 overrides still apply.
+    screenshot := NewRule('Alt+Shift+4', 'Win+Shift+S', 'Command', '區域螢幕截圖')
+    screenshot['builtin_id'] := 'Command+Shift+4'
+    rules.Push(screenshot)
     for key in ['Left', 'Right', 'Backspace', 'Delete'] {
         rules.Push(NewRule('Option+' key, 'LCtrl+' key, 'Option'))
         if key = 'Left' || key = 'Right'
